@@ -9,7 +9,7 @@ import { useForm, type SubmitHandler } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 // import { zodResolver } from "@hookform/resolvers/zod";
 
-export type Products = {
+export type Product = {
   id: number;
   price: number;
   productSize?: string;
@@ -44,7 +44,7 @@ const ProductForm = () => {
   });
 
   const onSubmit: SubmitHandler<ProductFormValues> = (productFormValues) => {
-    const newProduct: Products = {
+    const newProduct: Product = {
       id: Date.now(),
       ...productFormValues,
     };
@@ -82,8 +82,15 @@ fetch("http://localhost:3000/products", requestOptions)
     navigate("/products");
   };
   console.log(errors);
+  
+  const handleLogout = () => {
+  localStorage.removeItem("accessToken"); // remove token
+  navigate("/login"); // send user back to login page
+};
+
   return (
     <div>
+      <button onClick = {handleLogout}>Log Out</button>
       <form onSubmit={handleSubmit(onSubmit)}>
         <TextInput
           label={"Product Name"}
