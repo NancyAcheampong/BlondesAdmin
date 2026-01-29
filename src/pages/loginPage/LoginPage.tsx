@@ -1,111 +1,106 @@
-import * as z from "zod";
-// import { useNavigate } from "react-router-dom";
-import TextInput from "../../components/inputs/textInput/TextInput";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Navigate, useNavigate } from "react-router-dom";
-
-export type UserDetails = {
-    email: string;
-    password: string;
-}
-
-export const LoginSchema = z.object({
-    email: z.string().min(1, "required"),
-    password: z.string().min(1, "Please fill in your password"),
-});
-
-export type LoginPageValues = z.infer<typeof LoginSchema>;
-
-
-
+import { useAuth } from "../../context/AuthContext";
+import { LoginSchema, type LoginFormValues } from "../../types";
+import TextInput from "../../components/inputs/textInput/TextInput";
+import { Alert, Button } from "../../components/common";
+import styles from "./LoginPage.module.css";
 
 const LoginPage = () => {
+  const navigate = useNavigate();
+  const { login, isAuthenticated, isLoading, error, clearError } = useAuth();
 
-    const isAuthenticated = localStorage.getItem("accessToken");
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(LoginSchema),
+  });
 
+  // Redirect if already authenticated
+  useEffect(() => {
     if (isAuthenticated) {
-        return <Navigate to="/products" replace />;
+      navigate("/products", { replace: true });
     }
+  }, [isAuthenticated, navigate]);
 
-
-
-    const navigate = useNavigate();
-    const {
-        register,
-        reset,
-        handleSubmit,
-        formState: { errors },
-    } = useForm<LoginPageValues>({
-        resolver: zodResolver(LoginSchema),
-    });
-
-    const onSubmit: SubmitHandler<LoginPageValues> = (loginPageValues) => {
-        const newUser: UserDetails = {
-            ...loginPageValues,
-        };
-        console.log(newUser);
-
-        var myHeaders = new Headers();
-        myHeaders.append("Content-Type", "application/json");
-
-        var raw = JSON.stringify(
-            newUser
-        );
-
-        var requestOptions = {
-            method: 'POST',
-            headers: myHeaders,
-            body: raw,
-
-        };
-
-        fetch("http://localhost:3000/api/admin/login", requestOptions)
-            .then(response => response.json())
-            .then(result => {
-                if (result.accessToken) {
-                    localStorage.setItem("accessToken", result.accessToken)
-                    navigate("/products")
-                } else {
-                    alert(result.message || "Error Occured")
-                }
-                console.log(result)
-            })
-            .catch(error => {
-                alert(error.message)
-                console.log('error', error)
-            });
-
-
-        reset({
-            email: "",
-            password: ""
-        })
+  const onSubmit: SubmitHandler<LoginFormValues> = async (data) => {
+    try {
+      await login(data);
+      navigate("/products");
+    } catch {
+      // Error is handled by the auth context
     }
+  };
 
-    // const navigate = useNavigate();
-    // const {
-    //     register,
-    //     reset,
-    //     handleSubmit,
-    //     formState: { errors },
-    // } = useForm<LoginPageValues>({
-    //     resolver: zodResolver(LoginSchema),
-    // });
+  // Show loading spinner while checking auth status
+  if (isLoading) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.loadingContainer}>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
-    // reset();
-    return <div>
-        <form onSubmit={handleSubmit(onSubmit)}>
+  return (
+    <div className={styles.container}>
+      <div className={styles.formWrapper}>
+        <h1 className={styles.title}>Admin Login</h1>
+        <p className={styles.subtitle}>Sign in to manage your products</p>
+
+        {error && <Alert type="error" message={error} onClose={clearError} />}
+
+        <form onSubmit={handleSubmit(onSubmit)} className={styles.form}>
+          <div className={styles.inputGroup}>
             <TextInput
-                label={"email"} inputProps={register("email")} />
-            {errors.email?.message}
+              label="Email"
+              inputProps={{
+                ...register("email"),
+                type: "email",
+                placeholder: "Enter your email",
+                autoComplete: "email",
+              }}
+            />
+            {errors.email && (
+              <span className={styles.errorText}>{errors.email.message}</span>
+            )}
+          </div>
+
+          <div className={styles.inputGroup}>
             <TextInput
-                label={"password"} inputProps={register("password")} />
-            {errors.password?.message}
-            <button type="submit">Log In</button>
+              label="Password"
+              inputProps={{
+                ...register("password"),
+                type: "password",
+                placeholder: "Enter your password",
+                autoComplete: "current-password",
+              }}
+            />
+            {errors.password && (
+              <span className={styles.errorText}>
+                {errors.password.message}
+              </span>
+            )}
+          </div>
+
+          <Button
+            type="submit"
+            variant="primary"
+            size="large"
+            isLoading={isSubmitting}
+            className={styles.submitButton}
+          >
+            Log In
+          </Button>
         </form>
-
+      </div>
     </div>
-}
+  );
+};
 
 export default LoginPage;

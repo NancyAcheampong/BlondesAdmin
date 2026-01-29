@@ -1,131 +1,188 @@
-// import TextInput from "./components/textInput/TextInput";
-// import { useForm, type SubmitHandler } from "react-hook-form";
-// import { useProductsProvider } from "../../context/ProductProvider";
-import * as z from "zod";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useForm, type SubmitHandler } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "../../context/AuthContext";
+import { api } from "../../services/api";
+import { ProductsSchema, type ProductFormValues } from "../../types";
 import TextInput from "../../components/inputs/textInput/TextInput";
 import SelectInput from "../../components/inputs/selectInput/SelectInput";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, type SubmitHandler } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
-// import { zodResolver } from "@hookform/resolvers/zod";
-
-export type Product = {
-  id: number;
-  price: number;
-  productSize?: string;
-  productColor: string;
-  productName: string;
-  image: string;
-  inStock: boolean;
-  isLiked: boolean;
-};
-
-export const ProductsSchema = z.object({
-  productName: z.string().min(1, "required"),
-  price: z.number().min(0, "Price must be a positive number"),
-  image: z.string().min(1, "Image is required"),
-  productSize: z.enum(["small", "medium", "large"]).optional(),
-  productColor: z.string().min(1, "required"),
-  inStock: z.boolean(),
-  isLiked: z.boolean(),
-});
-
-export type ProductFormValues = z.infer<typeof ProductsSchema>;
+import { Alert, Button } from "../../components/common";
+import styles from "./ProductForm.module.css";
 
 const ProductForm = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { logout } = useAuth();
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
   const {
     register,
-    reset,
     handleSubmit,
     formState: { errors },
   } = useForm<ProductFormValues>({
     resolver: zodResolver(ProductsSchema),
-  });
-
-  const onSubmit: SubmitHandler<ProductFormValues> = (productFormValues) => {
-    const newProduct: Product = {
-      id: Date.now(),
-      ...productFormValues,
-    };
-    console.log(newProduct);
-
-    var myHeaders = new Headers();
-myHeaders.append("Content-Type", "application/json");
-
-var raw = JSON.stringify(
-    newProduct
-);
-
-var requestOptions = {
-  method: 'POST',
-  headers: myHeaders,
-  body: raw,
-//   redirect: 'follow'
-};
-
-fetch("http://localhost:3000/products", requestOptions)
-  .then(response => response.text())
-  .then(result => console.log(result))
-  .catch(error => console.log('error', error));
-
-    reset({
+    defaultValues: {
       productName: "",
       price: 0,
       productColor: "",
-      productSize: "small",
+      productSize: "medium",
       image: "",
-      isLiked: false,
       inStock: true,
-    });
+      isLiked: false,
+    },
+  });
 
-    navigate("/products");
+  const createProductMutation = useMutation({
+    mutationFn: api.createProduct,
+    onSuccess: () => {
+      // Invalidate and refetch products list
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      navigate("/products");
+    },
+    onError: (error) => {
+      setSubmitError(
+        error instanceof Error ? error.message : "Failed to create product"
+      );
+    },
+  });
+
+  const onSubmit: SubmitHandler<ProductFormValues> = (data) => {
+    setSubmitError(null);
+    createProductMutation.mutate(data);
   };
-  console.log(errors);
-  
+
   const handleLogout = () => {
-  localStorage.removeItem("accessToken"); // remove token
-  navigate("/login"); // send user back to login page
-};
+    logout();
+    navigate("/login");
+  };
 
   return (
-    <div>
-      <button onClick = {handleLogout}>Log Out</button>
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <TextInput
-          label={"Product Name"}
-          inputProps={register("productName")}
-        />
-        {errors.productName?.message}
-        <TextInput
-          label={"price"}
-          inputProps={register("price", { valueAsNumber: true })}
-        />
-        {errors.price?.message}
-        <TextInput label={"color"} inputProps={register("productColor")} />
-        {errors.productColor?.message}
-        <SelectInput
-          label={"size"}
-          options={[
-            { value: "small", label: "small" },
-            { value: "medium", label: "medium" },
-            { value: "large", label: "large" },
-          ]}
-          selectInputProps={register("productSize")}
-        />
-        <TextInput label={"image"} inputProps={register("image")} />
-        <div>
-          <label>In stock</label>
-
-          <input type="checkbox" {...register("inStock")} />
+    <div className={styles.container}>
+      <header className={styles.header}>
+        <div className={styles.headerLeft}>
+          <Link to="/products" className={styles.backLink}>
+            &larr; Back to Products
+          </Link>
+          <h1 className={styles.title}>Add New Product</h1>
         </div>
-        <div>
-          <label>Is liked</label>
+        <Button variant="outline" onClick={handleLogout}>
+          Log Out
+        </Button>
+      </header>
 
-          <input type="checkbox" {...register("isLiked")} />
-        </div>
-        <button type="submit">Submit Product</button>
-      </form>
+      <div className={styles.formWrapper}>
+        {submitError && (
+          <Alert
+            type="error"
+            message={submitError}
+            onClose={() => setSubmitError(null)}
+          />
+        )}
+
+        <form onSubmit={handleSubmit(onSubmit)} className={styles.form}>
+          <div className={styles.formGrid}>
+            <div className={styles.inputGroup}>
+              <TextInput
+                label="Product Name"
+                inputProps={{
+                  ...register("productName"),
+                  placeholder: "Enter product name",
+                }}
+              />
+              {errors.productName && (
+                <span className={styles.errorText}>
+                  {errors.productName.message}
+                </span>
+              )}
+            </div>
+
+            <div className={styles.inputGroup}>
+              <TextInput
+                label="Price"
+                inputProps={{
+                  ...register("price", { valueAsNumber: true }),
+                  type: "number",
+                  step: "0.01",
+                  min: "0",
+                  placeholder: "0.00",
+                }}
+              />
+              {errors.price && (
+                <span className={styles.errorText}>{errors.price.message}</span>
+              )}
+            </div>
+
+            <div className={styles.inputGroup}>
+              <TextInput
+                label="Color"
+                inputProps={{
+                  ...register("productColor"),
+                  placeholder: "Enter color",
+                }}
+              />
+              {errors.productColor && (
+                <span className={styles.errorText}>
+                  {errors.productColor.message}
+                </span>
+              )}
+            </div>
+
+            <div className={styles.inputGroup}>
+              <SelectInput
+                label="Size"
+                options={[
+                  { value: "small", label: "Small" },
+                  { value: "medium", label: "Medium" },
+                  { value: "large", label: "Large" },
+                ]}
+                selectInputProps={register("productSize")}
+              />
+            </div>
+
+            <div className={styles.inputGroupFull}>
+              <TextInput
+                label="Image URL"
+                inputProps={{
+                  ...register("image"),
+                  placeholder: "Enter image URL",
+                }}
+              />
+              {errors.image && (
+                <span className={styles.errorText}>{errors.image.message}</span>
+              )}
+            </div>
+
+            <div className={styles.checkboxGroup}>
+              <label className={styles.checkboxLabel}>
+                <input type="checkbox" {...register("inStock")} />
+                <span>In Stock</span>
+              </label>
+
+              <label className={styles.checkboxLabel}>
+                <input type="checkbox" {...register("isLiked")} />
+                <span>Featured/Liked</span>
+              </label>
+            </div>
+          </div>
+
+          <div className={styles.formActions}>
+            <Link to="/products">
+              <Button type="button" variant="outline">
+                Cancel
+              </Button>
+            </Link>
+            <Button
+              type="submit"
+              variant="primary"
+              isLoading={createProductMutation.isPending}
+            >
+              Create Product
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };

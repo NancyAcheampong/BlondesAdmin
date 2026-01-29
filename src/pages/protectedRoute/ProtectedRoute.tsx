@@ -1,17 +1,27 @@
-// src/components/ProtectedRoute.tsx
 import { Navigate, Outlet } from "react-router-dom";
-// import type { ReactNode } from "react";
-
-// interface ProtectedRouteProps {
-//   children: ReactNode;
-// }
+import { useAuth } from "../../context/AuthContext";
+import { LoadingSpinner } from "../../components/common";
 
 export default function ProtectedRoute() {
-  const isAuthenticated = localStorage.getItem("accessToken");
+  const { isAuthenticated, isLoading } = useAuth();
+
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '100vh'
+      }}>
+        <LoadingSpinner size="large" message="Checking authentication..." />
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
-  } 
+  }
 
-  return <><Outlet/></>;
+  return <Outlet />;
 }

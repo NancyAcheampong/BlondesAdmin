@@ -1,17 +1,14 @@
 import { createContext, useContext, useReducer, type ReactNode } from "react";
-import type { Products } from "../pages/productsForm/ProductForm";
+import type { Product } from "../types";
 
-// import { useNavigate } from "react-router-dom";
 interface ProductProviderProps {
   children?: ReactNode;
 }
 
 export type ProductsContextType = {
-  credentials?: null;
-  profileImageUrl?: string;
-  task: Products[];
+  products: Product[];
   dispatch: React.Dispatch<AppAction>;
-  addProduct: (newProducts: Products) => void;
+  addProduct: (newProduct: Product) => void;
   deleteProduct: (id: number) => void;
 };
 
@@ -21,18 +18,18 @@ const ProductsContext = createContext<ProductsContextType | null>(null);
 export const useProductsProvider = () => {
   const context = useContext(ProductsContext);
   if (!context) {
-    throw new Error("useProducts must be used within an ProductsProvider");
+    throw new Error("useProducts must be used within a ProductsProvider");
   }
   return context;
 };
 
 export type AppAction =
-  | { type: "ADD_PRODUCT"; payload: Products }
+  | { type: "ADD_PRODUCT"; payload: Product }
   | { type: "DELETE_PRODUCT"; payload: number };
 
 const PRODUCT_STORAGE_KEY = "productsReducer";
 
-const saveProductsToLocalStorage = (products: Products[]): void => {
+const saveProductsToLocalStorage = (products: Product[]): void => {
   try {
     localStorage.setItem(PRODUCT_STORAGE_KEY, JSON.stringify(products));
   } catch (error) {
@@ -40,38 +37,38 @@ const saveProductsToLocalStorage = (products: Products[]): void => {
   }
 };
 
-const loadProductsFromLocalStorage = (): Products[] => {
+const loadProductsFromLocalStorage = (): Product[] => {
   try {
     const storedProducts = localStorage.getItem(PRODUCT_STORAGE_KEY);
     return storedProducts ? JSON.parse(storedProducts) : [];
   } catch (error) {
-    console.error("Error loading Products from localStorage:", error);
+    console.error("Error loading products from localStorage:", error);
     return [];
   }
 };
 
-function productsReducer(state: Products[], action: AppAction): Products[] {
+function productsReducer(state: Product[], action: AppAction): Product[] {
   switch (action.type) {
     case "ADD_PRODUCT":
       saveProductsToLocalStorage([...state, action.payload]);
       return [...state, action.payload];
     case "DELETE_PRODUCT":
       saveProductsToLocalStorage(
-        state.filter((products) => products.id !== action.payload)
+        state.filter((product) => product.id !== action.payload)
       );
-      return state.filter((products) => products.id !== action.payload);
+      return state.filter((product) => product.id !== action.payload);
     default:
       return state;
   }
 }
 
 const ProductProvider = ({ children }: ProductProviderProps) => {
-  const [task, dispatch] = useReducer(
+  const [products, dispatch] = useReducer(
     productsReducer,
     loadProductsFromLocalStorage()
   );
 
-  const addProduct = (newProduct: Products) => {
+  const addProduct = (newProduct: Product) => {
     dispatch({ type: "ADD_PRODUCT", payload: newProduct });
   };
 
@@ -80,11 +77,11 @@ const ProductProvider = ({ children }: ProductProviderProps) => {
   };
 
   return (
-    <>
-      <ProductsContext.Provider value={{ task, dispatch, addProduct, deleteProduct }}>
-        {children}
-      </ProductsContext.Provider>
-    </>
+    <ProductsContext.Provider
+      value={{ products, dispatch, addProduct, deleteProduct }}
+    >
+      {children}
+    </ProductsContext.Provider>
   );
 };
 
