@@ -1,0 +1,36 @@
+.mb4 {
+  margin-bottom: 4px;
+}
+
+.label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}
+
+.label input {
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+}
+
+.label input:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+  outline: none;
+}
+
+.label input::placeholder {
+  color: #999;
+}
+
+.label input:disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+}
