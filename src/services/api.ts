@@ -44,7 +44,7 @@ export const api = {
 
   // Product endpoints
   getProducts: async (): Promise<Product[]> => {
-    const response = await fetch(`${API_URL}/products`, {
+    const response = await fetch(`${API_URL}/api/products`, {
       headers: getAuthHeaders(),
     });
     return handleResponse<Product[]>(response);
@@ -55,7 +55,7 @@ export const api = {
       id: Date.now(),
       ...productData,
     };
-    const response = await fetch(`${API_URL}/products`, {
+    const response = await fetch(`${API_URL}/api/products`, {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify(newProduct),
@@ -64,7 +64,7 @@ export const api = {
   },
 
   deleteProduct: async (id: number): Promise<void> => {
-    const response = await fetch(`${API_URL}/products/${id}`, {
+    const response = await fetch(`${API_URL}/api/products/${id}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
     });
@@ -78,7 +78,7 @@ export const api = {
   },
 
   updateProduct: async (id: number, productData: Partial<Product>): Promise<Product> => {
-    const response = await fetch(`${API_URL}/products/${id}`, {
+    const response = await fetch(`${API_URL}/api/products/${id}`, {
       method: "PUT",
       headers: getAuthHeaders(),
       body: JSON.stringify(productData),
