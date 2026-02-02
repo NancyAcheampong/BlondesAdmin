@@ -96,7 +96,7 @@ const ProductList = () => {
                     />
                   </td>
                   <td className={styles.productName}>{product.productName}</td>
-                  <td>${product.price.toFixed(2)}</td>
+                  <td>${Number(product.price).toFixed(2)}</td>
                   <td>{product.productSize || "—"}</td>
                   <td>{product.productColor}</td>
                   <td>
