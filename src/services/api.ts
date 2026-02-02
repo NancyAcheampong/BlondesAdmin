@@ -47,7 +47,9 @@ export const api = {
     const response = await fetch(`${API_URL}/api/products`, {
       headers: getAuthHeaders(),
     });
-    return handleResponse<Product[]>(response);
+    const data = await handleResponse<Product[] | { products: Product[] }>(response);
+    // Handle both direct array and wrapped { products: [...] } response
+    return Array.isArray(data) ? data : data.products;
   },
 
   createProduct: async (productData: ProductFormValues): Promise<Product> => {
