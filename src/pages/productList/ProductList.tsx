@@ -58,11 +58,29 @@ const ProductList = () => {
     setProductToDelete(null);
   };
 
-  // Helper to safely check boolean values (handles string "true"/"false" from API)
-  const isTrue = (value: boolean | string | undefined): boolean => {
+  // Helper to safely check boolean values
+  // Handles: boolean, string "true"/"false", numbers 1/0, string "1"/"0"
+  const parseBooleanValue = (value: boolean | string | number | undefined | null, defaultValue: boolean): boolean => {
+    if (value === undefined || value === null) return defaultValue;
     if (typeof value === "boolean") return value;
-    if (typeof value === "string") return value.toLowerCase() === "true";
-    return false;
+    if (typeof value === "number") return value !== 0;
+    if (typeof value === "string") {
+      const lower = value.toLowerCase().trim();
+      if (lower === "true" || lower === "1") return true;
+      if (lower === "false" || lower === "0" || lower === "") return false;
+      return defaultValue;
+    }
+    return defaultValue;
+  };
+
+  // Stock defaults to true (in stock)
+  const isInStock = (value: boolean | string | number | undefined | null): boolean => {
+    return parseBooleanValue(value, true);
+  };
+
+  // Featured defaults to false (not featured)
+  const isFeatured = (value: boolean | string | number | undefined | null): boolean => {
+    return parseBooleanValue(value, false);
   };
 
   if (isLoading) {
@@ -158,19 +176,19 @@ const ProductList = () => {
         </div>
         <div className={styles.statCard}>
           <span className={styles.statNumber}>
-            {products?.filter((p) => isTrue(p.inStock)).length || 0}
+            {products?.filter((p) => isInStock(p.inStock)).length || 0}
           </span>
           <span className={styles.statLabel}>In Stock</span>
         </div>
         <div className={styles.statCard}>
           <span className={styles.statNumber}>
-            {products?.filter((p) => !isTrue(p.inStock)).length || 0}
+            {products?.filter((p) => !isInStock(p.inStock)).length || 0}
           </span>
           <span className={styles.statLabel}>Out of Stock</span>
         </div>
         <div className={styles.statCard}>
           <span className={styles.statNumber}>
-            {products?.filter((p) => isTrue(p.isLiked)).length || 0}
+            {products?.filter((p) => isFeatured(p.isLiked)).length || 0}
           </span>
           <span className={styles.statLabel}>Featured</span>
         </div>
@@ -244,23 +262,23 @@ const ProductList = () => {
                   <td>
                     <span
                       className={`${styles.badge} ${
-                        isTrue(product.inStock)
+                        isInStock(product.inStock)
                           ? styles.badgeSuccess
                           : styles.badgeDanger
                       }`}
                     >
-                      {isTrue(product.inStock) ? "In Stock" : "Out of Stock"}
+                      {isInStock(product.inStock) ? "In Stock" : "Out of Stock"}
                     </span>
                   </td>
                   <td>
                     <span
                       className={`${styles.badge} ${
-                        isTrue(product.isLiked)
+                        isFeatured(product.isLiked)
                           ? styles.badgeFeatured
                           : styles.badgeNeutral
                       }`}
                     >
-                      {isTrue(product.isLiked) ? "★ Featured" : "Standard"}
+                      {isFeatured(product.isLiked) ? "★ Featured" : "Standard"}
                     </span>
                   </td>
                   <td>
